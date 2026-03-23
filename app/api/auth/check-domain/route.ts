@@ -1,7 +1,20 @@
+import { NextRequest } from "next/server";
 import { getEmailDomain, isDomainApproved } from "@/lib/auth";
+import { createRateLimiter } from "@/lib/rate-limit";
 
-export async function POST(req: Request) {
+const checkDomainLimiter = createRateLimiter({ windowMs: 60_000, max: 10 });
+
+export async function POST(req: NextRequest) {
   try {
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
+    const { allowed } = checkDomainLimiter.check(ip);
+    if (!allowed) {
+      return Response.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const { email } = await req.json();
 
     if (!email || !email.includes("@")) {

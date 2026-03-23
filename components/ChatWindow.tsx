@@ -13,7 +13,7 @@ import { ChatMessage as ChatMessageType, DateRange } from "@/lib/types";
 import { addTimeSaved } from "@/lib/time-saved";
 
 function generateSessionId(): string {
-  return "session_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+  return crypto.randomUUID();
 }
 
 function todayISO(): string {
@@ -164,7 +164,6 @@ export default function ChatWindow({ newsCount, userEmail }: ChatWindowProps) {
             session_id: sessionId.current,
             date_from: dateRange.from,
             date_to: dateRange.to,
-            user_email: userEmail,
           }),
         });
 

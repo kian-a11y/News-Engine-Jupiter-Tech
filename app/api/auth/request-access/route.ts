@@ -1,6 +1,10 @@
+import { NextRequest } from "next/server";
 import { createAccessRequest, getEmailDomain } from "@/lib/auth";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
+import { createRateLimiter } from "@/lib/rate-limit";
+
+const requestAccessLimiter = createRateLimiter({ windowMs: 3_600_000, max: 5 });
 
 function escapeHtml(str: string): string {
   return str
@@ -11,8 +15,17 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#39;");
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
+    const { allowed } = requestAccessLimiter.check(ip);
+    if (!allowed) {
+      return Response.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+    }
+
     const { name, email, company, role } = await req.json();
 
     if (!name || !email) {

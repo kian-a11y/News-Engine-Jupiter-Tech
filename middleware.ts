@@ -16,12 +16,7 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/auth") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/scrape") ||
-    pathname.startsWith("/api/headlines") ||
-    pathname.startsWith("/api/chat") ||
-    pathname.startsWith("/api/cleanup") ||
-    pathname.startsWith("/api/market-data") ||
-    pathname.startsWith("/api/calendar") ||
-    pathname.startsWith("/api/freshness")
+    pathname.startsWith("/api/cleanup")
   ) {
     return NextResponse.next();
   }

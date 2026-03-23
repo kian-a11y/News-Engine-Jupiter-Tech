@@ -6,6 +6,8 @@ import { rankByImpact } from "@/lib/impact-score";
 import { getRelevantMarketData } from "@/lib/market-data";
 import { getUpcomingEvents } from "@/lib/economic-calendar";
 import { chatLimiter } from "@/lib/rate-limit";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 export const runtime = "nodejs";
 
@@ -25,15 +27,24 @@ function getTodayRange(): { start: string; end: string } {
 
 export async function POST(req: Request) {
   try {
-    const { message, session_id, date_from, date_to, user_email } = await req.json();
+    const { message, session_id, date_from, date_to } = await req.json();
 
     if (!message || !session_id) {
       return Response.json({ error: "Missing message or session_id" }, { status: 400 });
     }
 
-    if (!user_email) {
+    // ─── Server-side auth: extract user from cookie ─────────────
+    const cookieStore = await cookies();
+    const authClient = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { cookies: { getAll() { return cookieStore.getAll(); }, setAll() {} } }
+    );
+    const { data: { user }, error: authError } = await authClient.auth.getUser();
+    if (authError || !user?.email) {
       return Response.json({ error: "Authentication required" }, { status: 401 });
     }
+    const user_email = user.email;
 
     // ─── Rate limiting ─────────────────────────────────────────
     const { allowed, retryAfterMs } = chatLimiter.check(user_email);
