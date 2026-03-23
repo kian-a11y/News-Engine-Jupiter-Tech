@@ -364,13 +364,10 @@ export default function OnboardingPage() {
                   Fair enough, sign me up
                 </button>
                 <button
-                  onClick={() => {
-                    setShowMarketingNudge(false);
-                    handleConsent();
-                  }}
+                  onClick={() => setShowMarketingNudge(false)}
                   className="w-full py-2.5 bg-transparent text-zinc-500 font-sans text-sm rounded-xl hover:text-zinc-300 transition-colors duration-200"
                 >
-                  Continue without
+                  Let me think about it
                 </button>
               </div>
             </div>
