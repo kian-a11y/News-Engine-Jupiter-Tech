@@ -1,24 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const code = searchParams.get("code");
+  const token_hash = searchParams.get("token_hash");
+  const type = (searchParams.get("type") || "email") as
+    | "signup"
+    | "magiclink"
+    | "email";
   const origin = req.nextUrl.origin;
 
-  // No code — direct visit or malformed link
-  if (!code) {
+  // No auth parameters at all — invalid or malformed link
+  if (!code && !token_hash) {
     return NextResponse.redirect(new URL("/login?error=missing_code", origin));
   }
 
-  // Determine redirect destination based on onboarding status
-  const hasOnboarded = req.cookies.get("jt_ob")?.value === "1";
-  const destination = hasOnboarded ? "/" : "/onboarding";
+  // Build a mutable response — cookies will be attached to it
+  const response = NextResponse.redirect(new URL("/", origin)); // placeholder destination
 
-  // Build redirect response FIRST — cookies will be attached to it
-  const response = NextResponse.redirect(new URL(destination, origin));
-
-  // Create server client with cookie adapter that writes to the response
+  // Create server client for session management (reads/writes cookies on the response)
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -36,16 +38,68 @@ export async function GET(req: NextRequest) {
     }
   );
 
-  // Exchange PKCE code for session — triggers setAll() above
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  // ── Handle both auth flows ──────────────────────────────────────
+  let authError;
 
-  if (error) {
-    // Code expired, already used, or invalid
+  if (token_hash) {
+    // Email confirmation flow ("Confirm your signup" email)
+    const result = await supabase.auth.verifyOtp({ token_hash, type });
+    authError = result.error;
+  } else if (code) {
+    // PKCE magic link flow (standard magic link email)
+    const result = await supabase.auth.exchangeCodeForSession(code);
+    authError = result.error;
+  }
+
+  if (authError) {
     return NextResponse.redirect(
       new URL("/login?error=invalid_link", origin)
     );
   }
 
-  // Success: response carries both the redirect AND Set-Cookie headers
-  return response;
+  // ── Determine destination via database, not cookie ──────────────
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.redirect(
+      new URL("/login?error=invalid_link", origin)
+    );
+  }
+
+  // Use service role to bypass RLS on user_profiles
+  const serviceClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const { data: profile } = await serviceClient
+    .from("user_profiles")
+    .select("onboarding_completed")
+    .eq("id", user.id)
+    .single();
+
+  const hasOnboarded = profile?.onboarding_completed === true;
+
+  if (hasOnboarded) {
+    // Refresh the onboarding cookie
+    response.cookies.set("jt_ob", "1", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      maxAge: 365 * 24 * 60 * 60,
+      path: "/",
+    });
+    // Rewrite destination to home
+    return NextResponse.redirect(new URL("/", origin), {
+      headers: response.headers,
+    });
+  } else {
+    // Clear stale cookie if present, send to onboarding
+    response.cookies.delete("jt_ob");
+    return NextResponse.redirect(new URL("/onboarding", origin), {
+      headers: response.headers,
+    });
+  }
 }
