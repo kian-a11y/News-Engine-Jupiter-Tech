@@ -36,6 +36,8 @@ function LoginContent() {
         const urlError = searchParams.get("error");
         if (urlError === "invalid_link") {
           setError("Your magic link has expired or is invalid. Please request a new one.");
+        } else if (urlError === "missing_code") {
+          setError("Invalid link. Please request a new magic link.");
         }
         setStep("email");
       }
