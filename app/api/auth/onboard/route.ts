@@ -4,10 +4,14 @@ import { cookies } from "next/headers";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { marketing_consent } = body;
+  const { marketing_consent, position, geography, biggest_bottleneck } = body;
 
   if (typeof marketing_consent !== "boolean") {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  }
+
+  if (!position?.trim() || !geography?.trim() || !biggest_bottleneck?.trim()) {
+    return NextResponse.json({ error: "All profile fields are required" }, { status: 400 });
   }
 
   const cookieStore = await cookies();
@@ -64,6 +68,9 @@ export async function POST(req: NextRequest) {
         marketing_consent,
         marketing_consent_at: new Date().toISOString(),
         marketing_consent_ip: ip,
+        position: position.trim(),
+        geography: geography.trim(),
+        biggest_bottleneck: biggest_bottleneck.trim(),
         onboarding_completed: true,
       },
       { onConflict: "id" }

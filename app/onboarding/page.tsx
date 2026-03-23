@@ -4,7 +4,21 @@ import { useState, useEffect } from "react";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import TermsContent from "@/components/TermsContent";
 
-type Step = "loading" | "consent" | "invite" | "done";
+type Step = "loading" | "consent" | "profile" | "invite" | "done";
+
+const GEOGRAPHIES = [
+  "UK & Ireland",
+  "Western Europe",
+  "Eastern Europe",
+  "Middle East & North Africa",
+  "Sub-Saharan Africa",
+  "South & Southeast Asia",
+  "East Asia & Pacific",
+  "North America",
+  "Latin America & Caribbean",
+  "Central Asia",
+  "Global / Multi-region",
+];
 
 export default function OnboardingPage() {
   const [step, setStep] = useState<Step>("loading");
@@ -14,6 +28,11 @@ export default function OnboardingPage() {
   const [showMarketingNudge, setShowMarketingNudge] = useState(false);
   const [consentLoading, setConsentLoading] = useState(false);
   const [consentError, setConsentError] = useState("");
+
+  const [position, setPosition] = useState("");
+  const [geography, setGeography] = useState("");
+  const [biggestBottleneck, setBiggestBottleneck] = useState("");
+  const [geoOpen, setGeoOpen] = useState(false);
 
   const [inviteEmails, setInviteEmails] = useState(["", "", ""]);
   const [inviteLoading, setInviteLoading] = useState(false);
@@ -39,17 +58,24 @@ export default function OnboardingPage() {
       setShowMarketingNudge(true);
       return;
     }
-    handleConsent();
+    setStep("profile");
   };
 
-  const handleConsent = async () => {
+  const profileComplete = position.trim() && geography && biggestBottleneck.trim();
+
+  const handleProfileSubmit = async () => {
     setConsentLoading(true);
     setConsentError("");
     try {
       const res = await fetch("/api/auth/onboard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ marketing_consent: marketingConsent }),
+        body: JSON.stringify({
+          marketing_consent: marketingConsent,
+          position: position.trim(),
+          geography,
+          biggest_bottleneck: biggestBottleneck.trim(),
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -177,7 +203,14 @@ export default function OnboardingPage() {
         <div className="flex items-center gap-2 mb-8">
           <div
             className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
-              step === "consent" || step === "invite"
+              step === "consent" || step === "profile" || step === "invite"
+                ? "bg-accent"
+                : "bg-zinc-800"
+            }`}
+          />
+          <div
+            className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
+              step === "profile" || step === "invite"
                 ? "bg-accent"
                 : "bg-zinc-800"
             }`}
@@ -357,7 +390,7 @@ export default function OnboardingPage() {
                   onClick={() => {
                     setMarketingConsent(true);
                     setShowMarketingNudge(false);
-                    handleConsent();
+                    setStep("profile");
                   }}
                   className="w-full py-2.5 bg-accent text-background font-sans font-semibold text-sm rounded-xl hover:bg-accent-dim transition-colors duration-200"
                 >
@@ -425,7 +458,124 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* Step 2: Invite Colleagues */}
+        {/* Step 2: Profile */}
+        {step === "profile" && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-sans font-semibold text-foreground mb-2">
+                Tell us about you
+              </h2>
+              <p className="text-sm text-zinc-400 font-sans leading-relaxed">
+                Helps us tailor the experience to your role and region.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {/* Position */}
+              <div>
+                <label className="block text-sm font-sans font-medium text-zinc-300 mb-1.5">
+                  Your position
+                </label>
+                <input
+                  type="text"
+                  value={position}
+                  onChange={(e) => setPosition(e.target.value)}
+                  placeholder="e.g. Head of Marketing"
+                  className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-sm font-sans text-foreground placeholder:text-zinc-600 outline-none focus:border-accent/50 focus:shadow-[0_0_15px_rgba(240,180,41,0.1)] transition-all duration-300"
+                />
+              </div>
+
+              {/* Geography */}
+              <div>
+                <label className="block text-sm font-sans font-medium text-zinc-300 mb-1.5">
+                  Main geography served
+                </label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setGeoOpen(!geoOpen)}
+                    className={`w-full px-4 py-3 bg-surface border border-border rounded-xl text-sm font-sans text-left outline-none focus:border-accent/50 focus:shadow-[0_0_15px_rgba(240,180,41,0.1)] transition-all duration-300 flex items-center justify-between ${
+                      geography ? "text-foreground" : "text-zinc-600"
+                    }`}
+                  >
+                    {geography || "Select your region"}
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={`text-zinc-500 transition-transform duration-200 ${geoOpen ? "rotate-180" : ""}`}
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </button>
+                  {geoOpen && (
+                    <div className="absolute z-20 mt-1 w-full bg-surface border border-border rounded-xl shadow-2xl overflow-hidden">
+                      <div className="max-h-56 overflow-y-auto">
+                        {GEOGRAPHIES.map((geo) => (
+                          <button
+                            key={geo}
+                            type="button"
+                            onClick={() => {
+                              setGeography(geo);
+                              setGeoOpen(false);
+                            }}
+                            className={`w-full px-4 py-2.5 text-sm font-sans text-left transition-colors ${
+                              geography === geo
+                                ? "bg-accent/10 text-accent"
+                                : "text-zinc-300 hover:bg-zinc-800"
+                            }`}
+                          >
+                            {geo}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Biggest Bottleneck */}
+              <div>
+                <label className="block text-sm font-sans font-medium text-zinc-300 mb-1.5">
+                  Biggest operational bottleneck
+                </label>
+                <textarea
+                  value={biggestBottleneck}
+                  onChange={(e) => setBiggestBottleneck(e.target.value)}
+                  placeholder="e.g. Manual processes eating up 10+ hours a week across the team..."
+                  rows={3}
+                  className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-sm font-sans text-foreground placeholder:text-zinc-600 outline-none focus:border-accent/50 focus:shadow-[0_0_15px_rgba(240,180,41,0.1)] transition-all duration-300 resize-none"
+                />
+              </div>
+            </div>
+
+            {consentError && (
+              <p className="text-sm text-red-400 font-mono">{consentError}</p>
+            )}
+
+            <button
+              onClick={handleProfileSubmit}
+              disabled={consentLoading || !profileComplete}
+              className="w-full py-3 bg-accent text-background font-sans font-semibold text-sm rounded-xl hover:bg-accent-dim transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {consentLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin" />
+                  Saving...
+                </span>
+              ) : (
+                "Continue →"
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Step 3: Invite Colleagues */}
         {step === "invite" && (
           <div className="space-y-6">
             <div>
