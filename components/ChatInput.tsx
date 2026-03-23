@@ -5,9 +5,11 @@ import { useState, useRef, useEffect } from "react";
 interface ChatInputProps {
   onSend: (message: string) => void;
   disabled: boolean;
+  draftInput?: string;
+  onDraftConsumed?: () => void;
 }
 
-export default function ChatInput({ onSend, disabled }: ChatInputProps) {
+export default function ChatInput({ onSend, disabled, draftInput, onDraftConsumed }: ChatInputProps) {
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -18,6 +20,14 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
         Math.min(textareaRef.current.scrollHeight, 150) + "px";
     }
   }, [input]);
+
+  useEffect(() => {
+    if (draftInput) {
+      setInput(draftInput);
+      onDraftConsumed?.();
+      textareaRef.current?.focus();
+    }
+  }, [draftInput, onDraftConsumed]);
 
   const handleSend = () => {
     const trimmed = input.trim();

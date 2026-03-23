@@ -2,18 +2,28 @@
 
 import { useEffect, useState } from "react";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
+import { getTimeSaved, formatTimeSaved } from "@/lib/time-saved";
 
 export default function Header() {
   const [email, setEmail] = useState<string | null>(null);
   const [freshnessLabel, setFreshnessLabel] = useState<string | null>(null);
   const [freshnessColor, setFreshnessColor] = useState<string>("text-zinc-600");
   const [freshnessDot, setFreshnessDot] = useState<string>("bg-zinc-600");
+  const [timeSavedMinutes, setTimeSavedMinutes] = useState(0);
+  const [showTimeInfo, setShowTimeInfo] = useState(false);
   const supabase = getSupabaseBrowser();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setEmail(data.user?.email || null);
     });
+  }, []);
+
+  useEffect(() => {
+    setTimeSavedMinutes(getTimeSaved().minutes);
+    const handleTimeSaved = () => setTimeSavedMinutes(getTimeSaved().minutes);
+    window.addEventListener("timesaved", handleTimeSaved);
+    return () => window.removeEventListener("timesaved", handleTimeSaved);
   }, []);
 
   useEffect(() => {
@@ -75,6 +85,24 @@ export default function Header() {
           </svg>
           Book a Free AI Strategy Session
         </a>
+        {timeSavedMinutes > 0 && (
+          <div className="hidden sm:flex items-center gap-1.5 relative">
+            <span className="font-mono text-xs text-accent/80">
+              ⏱ {formatTimeSaved(timeSavedMinutes)} saved
+            </span>
+            <button
+              onClick={() => setShowTimeInfo((v) => !v)}
+              className="w-4 h-4 flex items-center justify-center rounded-full border border-zinc-600 text-zinc-500 text-[9px] font-mono hover:text-accent hover:border-accent/50 transition-colors"
+            >
+              i
+            </button>
+            {showTimeInfo && (
+              <div className="absolute top-full right-0 mt-2 bg-zinc-900 border border-border rounded-xl p-3 text-xs text-zinc-400 max-w-xs z-50">
+                Time saved is estimated based on the word count of each AI output. A human content writer produces ~8 words/minute for marketing copy. We add 3 minutes per output for research time (reading sources, checking data). This is a conservative estimate — most teams report saving significantly more.
+              </div>
+            )}
+          </div>
+        )}
         <div className="hidden sm:flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           <span className="font-mono text-sm text-zinc-400 tracking-wide">

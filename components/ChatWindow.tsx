@@ -10,6 +10,7 @@ import DateRangeFilter from "./DateRangeFilter";
 import MarketPulse from "./MarketPulse";
 import { UsageMilestoneBanner } from "./AuditCTA";
 import { ChatMessage as ChatMessageType, DateRange } from "@/lib/types";
+import { addTimeSaved } from "@/lib/time-saved";
 
 function generateSessionId(): string {
   return "session_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -47,6 +48,7 @@ export default function ChatWindow({ newsCount, userEmail }: ChatWindowProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [marketPulseOpen, setMarketPulseOpen] = useState(false);
   const [milestoneDismissed, setMilestoneDismissed] = useState(false);
+  const [draftInput, setDraftInput] = useState("");
   const [dateRange, setDateRange] = useState<DateRange>({
     preset: "today",
     from: todayISO(),
@@ -152,6 +154,7 @@ export default function ChatWindow({ newsCount, userEmail }: ChatWindowProps) {
         { id: assistantId, role: "assistant", content: "" },
       ]);
 
+      let streamSuccess = false;
       try {
         const res = await fetch("/api/chat", {
           method: "POST",
@@ -226,6 +229,7 @@ export default function ChatWindow({ newsCount, userEmail }: ChatWindowProps) {
             }
           }
         }
+        streamSuccess = true;
       } catch (err) {
         console.error("Chat error:", err);
         setMessages((prev) =>
@@ -241,6 +245,17 @@ export default function ChatWindow({ newsCount, userEmail }: ChatWindowProps) {
         );
       } finally {
         setIsStreaming(false);
+        if (streamSuccess) {
+          setMessages((prev) => {
+            const assistantMsg = prev.find((m) => m.id === assistantId);
+            if (assistantMsg && assistantMsg.content) {
+              const wordCount = assistantMsg.content.trim().split(/\s+/).length;
+              addTimeSaved(wordCount);
+              window.dispatchEvent(new Event("timesaved"));
+            }
+            return prev;
+          });
+        }
       }
     },
     [isStreaming, dateRange]
@@ -323,8 +338,8 @@ export default function ChatWindow({ newsCount, userEmail }: ChatWindowProps) {
         </div>
 
         {/* Quick actions + input */}
-        <QuickActions onAction={sendMessage} disabled={isStreaming} />
-        <ChatInput onSend={sendMessage} disabled={isStreaming} />
+        <QuickActions onAction={setDraftInput} disabled={isStreaming} />
+        <ChatInput onSend={sendMessage} disabled={isStreaming} draftInput={draftInput} onDraftConsumed={() => setDraftInput("")} />
       </div>
     </>
   );
