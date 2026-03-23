@@ -72,6 +72,13 @@ function LoginContent() {
     setError("");
 
     try {
+      // Pre-create user so Supabase sends a magic link (not "Confirm your signup")
+      await fetch("/api/auth/ensure-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
       const { error: authError } = await supabase.auth.signInWithOtp({
         email,
         options: {
