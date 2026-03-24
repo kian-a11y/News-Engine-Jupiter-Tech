@@ -68,7 +68,7 @@ export async function POST(req: Request) {
 
     if ((count || 0) >= DAILY_LIMIT) {
       return Response.json({
-        error: `You've reached your daily limit of ${DAILY_LIMIT} outputs. Limits reset at midnight.\n\nWant unlimited AI-powered market intelligence for your whole team?\n\n[Book an AI Audit →](https://calendly.com/kian-jupitertech/cfd-ai-audit)`,
+        error: `You've reached your daily limit of ${DAILY_LIMIT} outputs. Limits reset at midnight.\n\nThis content engine is just one workflow inside Jupiter Tech's broker OS. Want unlimited access for your whole team?\n\n[See the full platform →](https://calendly.com/kian-jupitertech/cfd-ai-audit)`,
       }, { status: 429 });
     }
 

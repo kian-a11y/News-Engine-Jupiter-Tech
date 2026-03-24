@@ -25,16 +25,15 @@ export function PostOutputCTA() {
           </svg>
         </div>
         <p className="text-[11px] text-zinc-500 leading-relaxed font-sans">
-          Imagine this running automatically for your entire team.{" "}
+          This took you 2 minutes instead of 2 hours. Now imagine every workflow across your brokerage running like this — CRM, client portal, compliance, content, all connected.{" "}
           <a
             href={BOOKING_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="text-accent hover:underline font-medium"
           >
-            Book a free AI audit
-          </a>{" "}
-          to see how Jupiter Tech can automate your broker&apos;s content workflows.
+            See the full operating system →
+          </a>
         </p>
       </div>
     </div>
@@ -48,14 +47,14 @@ export function CopyHookTooltip() {
   return (
     <div className="animate-fade-in absolute bottom-full right-0 mb-2 w-64 bg-surface border border-accent/20 rounded-lg px-3 py-2 shadow-lg shadow-black/20">
       <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">
-        Want this delivered on autopilot?{" "}
+        Content is just the start.{" "}
         <a
           href={BOOKING_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="text-accent hover:underline font-medium"
         >
-          Talk to Jupiter Tech
+          See the full broker OS →
         </a>
       </p>
       <div className="absolute bottom-[-5px] right-4 w-2.5 h-2.5 bg-surface border-b border-r border-accent/20 rotate-45" />
@@ -87,17 +86,15 @@ export function UsageMilestoneBanner({ onDismiss }: { onDismiss: () => void }) {
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-          Your team is getting real value from the FX News Engine.{" "}
+          This is one workflow. Jupiter Tech&apos;s broker OS connects 100+ more — CRM, client portal, compliance, risk, and beyond.{" "}
           <a
             href={BOOKING_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="text-accent hover:underline font-medium"
           >
-            Book a free AI audit
-          </a>{" "}
-          to see how Jupiter Tech can automate these workflows across your
-          entire brokerage.
+            Book a free demo →
+          </a>
         </p>
       </div>
       <button

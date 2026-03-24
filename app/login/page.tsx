@@ -312,7 +312,7 @@ function LoginContent() {
             rel="noopener noreferrer"
             className="inline-block text-[11px] text-zinc-600 hover:text-accent font-sans transition-colors"
           >
-            Want AI-powered content for your brokerage? Let&apos;s talk →
+            Replace your legacy CRM with an AI-native operating system. Learn more →
           </a>
         </div>
       </div>

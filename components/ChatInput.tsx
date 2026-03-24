@@ -80,7 +80,7 @@ export default function ChatInput({ onSend, disabled, draftInput, onDraftConsume
         </button>
       </div>
       <p className="text-center text-[11px] text-zinc-600 mt-2 font-sans">
-        Powered by Jupiter Tech
+        Powered by Jupiter Tech — The Operating System for CFD Brokers
       </p>
     </div>
   );

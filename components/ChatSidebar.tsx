@@ -146,8 +146,8 @@ export default function ChatSidebar({
             rel="noopener noreferrer"
             className="block w-full text-center px-3 py-2 text-[11px] font-sans text-zinc-400 hover:text-accent border border-border/60 rounded-lg hover:border-accent/30 hover:bg-accent/5 transition-all duration-200"
           >
-            Want this for your whole team?{" "}
-            <span className="text-accent font-medium">Book a free strategy call →</span>
+            Content is just one workflow.{" "}
+            <span className="text-accent font-medium">See the full broker OS →</span>
           </a>
         </div>
       </div>

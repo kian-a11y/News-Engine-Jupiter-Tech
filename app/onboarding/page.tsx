@@ -295,8 +295,8 @@ export default function OnboardingPage() {
                   Marketing communications
                 </p>
                 <p className="text-xs text-zinc-500 font-sans leading-relaxed">
-                  Jupiter Tech may send you product updates, FX market insights,
-                  and news about the platform. You can unsubscribe at any time.
+                  Jupiter Tech may send you product updates, broker workflow tips,
+                  and early access to new platform features. You can unsubscribe at any time.
                 </p>
               </div>
 
@@ -334,8 +334,8 @@ export default function OnboardingPage() {
                   </div>
                 </div>
                 <span className="text-sm font-sans text-zinc-300 leading-relaxed">
-                  I agree to receive marketing emails from Jupiter Tech about
-                  the FX News Engine and related products.
+                  I agree to receive emails from Jupiter Tech about the broker
+                  operating system and new workflow releases.
                 </span>
               </label>
             </div>
