@@ -267,7 +267,7 @@ function LoginContent() {
                   }, 100);
                 }
               }}
-              placeholder="000000"
+              placeholder="00000000"
               autoFocus
               className="w-full px-4 py-4 bg-surface border border-border rounded-xl text-center text-2xl font-mono tracking-[0.5em] text-foreground placeholder:text-zinc-700 outline-none focus:border-accent/50 focus:shadow-[0_0_15px_rgba(240,180,41,0.1)] transition-all duration-300"
             />
