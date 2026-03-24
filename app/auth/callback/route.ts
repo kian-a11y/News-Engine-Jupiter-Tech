@@ -12,8 +12,10 @@ export async function GET(req: NextRequest) {
     | "email";
   const origin = req.nextUrl.origin;
 
+  const verified = searchParams.get("verified");
+
   // No auth parameters at all — invalid or malformed link
-  if (!code && !token_hash) {
+  if (!code && !token_hash && !verified) {
     return NextResponse.redirect(new URL("/login?error=missing_code", origin));
   }
 
@@ -38,23 +40,24 @@ export async function GET(req: NextRequest) {
     }
   );
 
-  // ── Handle both auth flows ──────────────────────────────────────
-  let authError;
+  // ── Handle auth flows ──────────────────────────────────────
+  // verified=1: session already established via OTP on login page — skip code exchange
+  if (!verified) {
+    let authError;
 
-  if (token_hash) {
-    // Email confirmation flow ("Confirm your signup" email)
-    const result = await supabase.auth.verifyOtp({ token_hash, type });
-    authError = result.error;
-  } else if (code) {
-    // PKCE magic link flow (standard magic link email)
-    const result = await supabase.auth.exchangeCodeForSession(code);
-    authError = result.error;
-  }
+    if (token_hash) {
+      const result = await supabase.auth.verifyOtp({ token_hash, type });
+      authError = result.error;
+    } else if (code) {
+      const result = await supabase.auth.exchangeCodeForSession(code);
+      authError = result.error;
+    }
 
-  if (authError) {
-    return NextResponse.redirect(
-      new URL("/login?error=invalid_link", origin)
-    );
+    if (authError) {
+      return NextResponse.redirect(
+        new URL("/login?error=invalid_link", origin)
+      );
+    }
   }
 
   // ── Determine destination via database, not cookie ──────────────

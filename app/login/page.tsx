@@ -71,7 +71,7 @@ function LoginContent() {
       setError("Invalid code. Please check and try again.");
       setLoading(false);
     } else {
-      window.location.href = "/";
+      window.location.href = "/auth/callback?verified=1";
     }
   };
 
@@ -262,7 +262,7 @@ function LoginContent() {
                     setError("");
                     supabase.auth.verifyOtp({ email, token: val, type: "email" }).then(({ error: err }) => {
                       if (err) { setError("Invalid code. Please check and try again."); setLoading(false); }
-                      else { window.location.href = "/"; }
+                      else { window.location.href = "/auth/callback?verified=1"; }
                     });
                   }, 100);
                 }
