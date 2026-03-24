@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 
-type Step = "loading" | "email" | "magic-link-sent";
+type Step = "loading" | "email" | "otp";
 
 export default function LoginPage() {
   return (
@@ -23,6 +23,8 @@ export default function LoginPage() {
 function LoginContent() {
   const [step, setStep] = useState<Step>("loading");
   const [email, setEmail] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const searchParams = useSearchParams();
@@ -43,6 +45,49 @@ function LoginContent() {
       }
     });
   }, [supabase, searchParams]);
+
+  // Resend cooldown timer
+  useEffect(() => {
+    if (step !== "otp" || resendCooldown <= 0) return;
+    const interval = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) { clearInterval(interval); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [step, resendCooldown]);
+
+  const handleVerifyOtp = async () => {
+    if (otpCode.length !== 6) return;
+    setLoading(true);
+    setError("");
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token: otpCode,
+      type: "email",
+    });
+    if (error) {
+      setError("Invalid code. Please check and try again.");
+      setLoading(false);
+    } else {
+      window.location.href = "/";
+    }
+  };
+
+  const handleResend = async () => {
+    if (resendCooldown > 0) return;
+    setError("");
+    setOtpCode("");
+    await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        shouldCreateUser: false,
+      },
+    });
+    setResendCooldown(60);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,7 +148,8 @@ function LoginContent() {
       if (authError) {
         setError(authError.message);
       } else {
-        setStep("magic-link-sent");
+        setResendCooldown(60);
+        setStep("otp");
       }
     } catch {
       setError("Something went wrong. Please try again.");
@@ -182,29 +228,79 @@ function LoginContent() {
           </form>
         )}
 
-        {step === "magic-link-sent" && (
-          <div className="text-center space-y-4">
-            <div className="w-16 h-16 mx-auto rounded-full bg-accent/10 flex items-center justify-center">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f0b429" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                <polyline points="22,6 12,13 2,6" />
-              </svg>
+        {step === "otp" && (
+          <div className="space-y-5">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto rounded-full bg-accent/10 flex items-center justify-center mb-4">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f0b429" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+              </div>
+              <h2 className="text-lg font-sans font-semibold text-foreground mb-1">
+                Enter your verification code
+              </h2>
+              <p className="text-sm text-zinc-400 font-sans">
+                We sent a 6-digit code to{" "}
+                <span className="text-accent font-mono">{email}</span>
+              </p>
             </div>
-            <h2 className="text-lg font-sans font-semibold text-foreground">
-              Check your email
-            </h2>
-            <p className="text-sm text-zinc-400 font-sans">
-              We&apos;ve sent a magic link to{" "}
-              <span className="text-accent font-mono">{email}</span>.
-              <br />
-              Click the link to sign in.
-            </p>
+
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              autoComplete="one-time-code"
+              maxLength={6}
+              value={otpCode}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+                setOtpCode(val);
+                if (error) setError("");
+                if (val.length === 6) {
+                  // Auto-submit on 6th digit
+                  setTimeout(() => {
+                    setLoading(true);
+                    setError("");
+                    supabase.auth.verifyOtp({ email, token: val, type: "email" }).then(({ error: err }) => {
+                      if (err) { setError("Invalid code. Please check and try again."); setLoading(false); }
+                      else { window.location.href = "/"; }
+                    });
+                  }, 100);
+                }
+              }}
+              placeholder="000000"
+              autoFocus
+              className="w-full px-4 py-4 bg-surface border border-border rounded-xl text-center text-2xl font-mono tracking-[0.5em] text-foreground placeholder:text-zinc-700 outline-none focus:border-accent/50 focus:shadow-[0_0_15px_rgba(240,180,41,0.1)] transition-all duration-300"
+            />
+
+            {error && (
+              <p className="text-sm text-red-400 font-mono text-center">{error}</p>
+            )}
+
             <button
-              onClick={() => setStep("email")}
-              className="text-sm text-zinc-500 hover:text-accent font-mono transition-colors"
+              onClick={handleVerifyOtp}
+              disabled={loading || otpCode.length !== 6}
+              className="w-full py-3 bg-accent text-background font-sans font-semibold text-sm rounded-xl hover:bg-accent-dim transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Use a different email
+              {loading ? "Verifying..." : "Verify"}
             </button>
+
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => { setStep("email"); setOtpCode(""); setError(""); }}
+                className="text-sm text-zinc-500 hover:text-accent font-mono transition-colors"
+              >
+                Different email
+              </button>
+              <button
+                onClick={handleResend}
+                disabled={resendCooldown > 0}
+                className="text-sm font-mono transition-colors disabled:text-zinc-700 text-zinc-500 hover:text-accent"
+              >
+                {resendCooldown > 0 ? `Resend code (${resendCooldown}s)` : "Resend code"}
+              </button>
+            </div>
           </div>
         )}
 
