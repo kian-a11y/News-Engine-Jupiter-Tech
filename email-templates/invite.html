@@ -1,119 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-import { Resend } from "resend";
-import { inviteLimiter } from "@/lib/rate-limit";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#x27;");
-}
-
-export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const { emails } = body;
-
-  if (!Array.isArray(emails) || emails.length === 0) {
-    return NextResponse.json({ error: "No emails provided" }, { status: 400 });
-  }
-
-  const cookieStore = await cookies();
-
-  const anonClient = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll() {},
-      },
-    }
-  );
-
-  const {
-    data: { user },
-    error: userError,
-  } = await anonClient.auth.getUser();
-
-  if (userError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  // Rate limit: 3 invite batches per hour per user
-  const { allowed } = inviteLimiter.check(user.email || user.id);
-  if (!allowed) {
-    return NextResponse.json(
-      { error: "You've sent too many invites recently. Please try again later." },
-      { status: 429 }
-    );
-  }
-
-  const serviceClient = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll() {},
-      },
-    }
-  );
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const validEmails = emails.slice(0, 5).filter((e) => emailRegex.test(e));
-
-  if (validEmails.length === 0) {
-    return NextResponse.json(
-      { error: "No valid emails provided" },
-      { status: 400 }
-    );
-  }
-
-  const invited: string[] = [];
-  const failed: string[] = [];
-  const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "https://news.jupitertech.io";
-  const safeInviterEmail = escapeHtml(user.email || "A colleague");
-
-  for (const email of validEmails) {
-    try {
-      // Log invitation to DB
-      await serviceClient.from("invitations").insert({
-        inviter_id: user.id,
-        inviter_email: user.email,
-        invitee_email: email,
-      });
-
-      // Send via Resend
-      await resend.emails.send({
-        from: "Jupiter Tech <noreply@jupitertech.io>",
-        to: email,
-        subject: `${safeInviterEmail} invited you to Jupiter Tech`,
-        html: `<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>You're invited to Jupiter Tech</title>
-  <!--[if mso]>
-  <noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript>
-  <![endif]-->
 </head>
 <body style="margin:0;padding:0;background-color:#07070b;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;">
   <!-- Preheader -->
   <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
-    ${safeInviterEmail} invited you to Jupiter Tech's FX News Engine — turn today's market news into ready-to-publish content in minutes. &#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;
+    kian@jupitertech.io invited you to Jupiter Tech's FX News Engine — turn today's market news into ready-to-publish content in minutes. &#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;
   </div>
 
   <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#07070b;">
@@ -173,7 +69,7 @@ export async function POST(req: NextRequest) {
           <tr>
             <td align="center" style="padding:16px 48px 0;">
               <p style="margin:0;font-size:15px;color:#a1a1aa;line-height:1.65;">
-                <span style="color:#f0b429;font-weight:600;">${safeInviterEmail}</span> invited you to the FX News Engine &mdash; turn real-time market news into ready-to-publish content for your traders in minutes.
+                <span style="color:#f0b429;font-weight:600;">kian@jupitertech.io</span> invited you to the FX News Engine &mdash; turn real-time market news into ready-to-publish content for your traders in minutes.
               </p>
             </td>
           </tr>
@@ -184,7 +80,7 @@ export async function POST(req: NextRequest) {
               <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
                   <td align="center" style="background-color:#f0b429;border-radius:12px;">
-                    <a href="${appUrl}/login" target="_blank" style="display:block;padding:16px 32px;font-size:15px;font-weight:700;color:#07070b;text-decoration:none;letter-spacing:0.2px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;text-align:center;">
+                    <a href="#" target="_blank" style="display:block;padding:16px 32px;font-size:15px;font-weight:700;color:#07070b;text-decoration:none;letter-spacing:0.2px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;text-align:center;">
                       Accept Invite &amp; Get Started
                     </a>
                   </td>
@@ -322,7 +218,7 @@ export async function POST(req: NextRequest) {
           <tr>
             <td align="center" style="padding:0 40px 8px;">
               <p style="margin:0;font-size:10px;color:#27272a;line-height:1.6;">
-                You received this because ${safeInviterEmail} invited you.
+                You received this because kian@jupitertech.io invited you.
               </p>
             </td>
           </tr>
@@ -339,15 +235,4 @@ export async function POST(req: NextRequest) {
     </tr>
   </table>
 </body>
-</html>`,
-      });
-
-      invited.push(email);
-    } catch (err) {
-      console.error("[Invite] Failed to invite", email, err);
-      failed.push(email);
-    }
-  }
-
-  return NextResponse.json({ success: true, invited, failed });
-}
+</html>
