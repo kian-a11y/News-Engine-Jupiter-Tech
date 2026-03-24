@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { getEmailDomain, isDomainApproved } from "@/lib/auth";
 import { createRateLimiter } from "@/lib/rate-limit";
 
 const ensureUserLimiter = createRateLimiter({ windowMs: 60_000, max: 5 });
@@ -22,14 +21,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, reason: "rate_limited" }, { status: 429 });
   }
 
-  // Validate domain is approved before creating user
-  const domain = getEmailDomain(email);
-  const approved = await isDomainApproved(domain);
-  if (!approved) {
-    return NextResponse.json({ ok: false, reason: "domain_not_approved" }, { status: 403 });
-  }
-
-  // Domain approved — pre-create user so signInWithOtp sends magic link
+  // Pre-create user with confirmed email so signInWithOtp sends OTP (not confirmation email)
+  // Client-side already blocks personal email domains — this is open to any work email
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!

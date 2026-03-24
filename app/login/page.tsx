@@ -126,9 +126,7 @@ function LoginContent() {
       const ensureData = await ensureRes.json();
 
       if (!ensureData.ok) {
-        if (ensureData.reason === "domain_not_approved") {
-          setError("Your company domain isn't registered yet. Contact us to get access.");
-        } else if (ensureData.reason === "rate_limited") {
+        if (ensureData.reason === "rate_limited") {
           setError("Too many attempts. Please try again in a minute.");
         } else {
           setError("Something went wrong. Please try again.");
