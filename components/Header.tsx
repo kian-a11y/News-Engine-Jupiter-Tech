@@ -64,7 +64,7 @@ export default function Header() {
     <header className="relative z-10 flex items-center justify-between px-4 sm:px-6 py-2.5 border-b border-border bg-surface/80 backdrop-blur-sm">
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
-          <img src="/logo-icon.png" alt="Jupiter Tech" width={28} height={28} className="w-7 h-7 rounded-lg object-cover" />
+          <img src="/logo.png" alt="Jupiter Tech" width={28} height={28} className="w-7 h-7 rounded-lg object-cover" />
           <span className="text-foreground font-sans font-semibold text-base tracking-tight">
             Jupiter Tech
           </span>

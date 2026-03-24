@@ -147,7 +147,7 @@ export default function OnboardingPage() {
   if (step === "loading") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <img src="/logo-icon.png" alt="Jupiter Tech" width={32} height={32} className="w-8 h-8 rounded-lg object-cover animate-pulse" />
+        <img src="/logo.png" alt="Jupiter Tech" width={32} height={32} className="w-8 h-8 rounded-lg object-cover animate-pulse" />
       </div>
     );
   }
@@ -191,7 +191,7 @@ export default function OnboardingPage() {
         {/* Brand */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-3 mb-4">
-            <img src="/logo-icon.png" alt="Jupiter Tech" width={48} height={48} className="w-12 h-12 rounded-xl object-cover" />
+            <img src="/logo.png" alt="Jupiter Tech" width={48} height={48} className="w-12 h-12 rounded-xl object-cover" />
             <span className="text-2xl font-sans font-semibold text-foreground tracking-tight">
               Jupiter Tech
             </span>

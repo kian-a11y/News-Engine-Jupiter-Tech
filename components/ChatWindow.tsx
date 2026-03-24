@@ -33,7 +33,7 @@ function makeWelcome(newsCount: number, topHeadline?: string, topSource?: string
   if (nextEvent) {
     lines.push(`\n**Next Event:** ${nextEvent}${nextEventTime ? ` at ${nextEventTime} UTC` : ""}`);
   }
-  lines.push(`\nUse the quick actions below or ask me anything about today's markets.\n\n<sub>Enjoying the engine? [Book a free AI strategy session](https://calendly.com/kian-jupitertech/cfd-ai-audit) to explore full automation for your team.</sub>`);
+  lines.push(`\nUse the quick actions below or ask me anything about today's markets.\n\n*Enjoying the engine? [Book a free AI strategy session](https://calendly.com/kian-jupitertech/cfd-ai-audit) to explore full automation for your team.*`);
 
   return {
     id: "welcome",
