@@ -72,17 +72,31 @@ function LoginContent() {
     setError("");
 
     try {
-      // Pre-create user so Supabase sends a magic link (not "Confirm your signup")
-      await fetch("/api/auth/ensure-user", {
+      // Pre-create user with domain validation — response MUST be checked
+      const ensureRes = await fetch("/api/auth/ensure-user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
+      const ensureData = await ensureRes.json();
+
+      if (!ensureData.ok) {
+        if (ensureData.reason === "domain_not_approved") {
+          setError("Your company domain isn't registered yet. Contact us to get access.");
+        } else if (ensureData.reason === "rate_limited") {
+          setError("Too many attempts. Please try again in a minute.");
+        } else {
+          setError("Something went wrong. Please try again.");
+        }
+        setLoading(false);
+        return;
+      }
 
       const { error: authError } = await supabase.auth.signInWithOtp({
         email,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
+          shouldCreateUser: false, // Only pre-created (domain-validated) users get magic links
         },
       });
 
