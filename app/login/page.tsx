@@ -59,7 +59,7 @@ function LoginContent() {
   }, [step, resendCooldown]);
 
   const handleVerifyOtp = async () => {
-    if (otpCode.length !== 6) return;
+    if (otpCode.length < 6) return;
     setLoading(true);
     setError("");
     const { error } = await supabase.auth.verifyOtp({
@@ -239,7 +239,7 @@ function LoginContent() {
                 Enter your verification code
               </h2>
               <p className="text-sm text-zinc-400 font-sans">
-                We sent a 6-digit code to{" "}
+                We sent a verification code to{" "}
                 <span className="text-accent font-mono">{email}</span>
               </p>
             </div>
@@ -249,13 +249,13 @@ function LoginContent() {
               inputMode="numeric"
               pattern="[0-9]*"
               autoComplete="one-time-code"
-              maxLength={6}
+              maxLength={8}
               value={otpCode}
               onChange={(e) => {
-                const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+                const val = e.target.value.replace(/\D/g, "").slice(0, 8);
                 setOtpCode(val);
                 if (error) setError("");
-                if (val.length === 6) {
+                if (val.length >= 6) {
                   // Auto-submit on 6th digit
                   setTimeout(() => {
                     setLoading(true);
@@ -278,7 +278,7 @@ function LoginContent() {
 
             <button
               onClick={handleVerifyOtp}
-              disabled={loading || otpCode.length !== 6}
+              disabled={loading || otpCode.length < 6}
               className="w-full py-3 bg-accent text-background font-sans font-semibold text-sm rounded-xl hover:bg-accent-dim transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {loading ? "Verifying..." : "Verify"}
